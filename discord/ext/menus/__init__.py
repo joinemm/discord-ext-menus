@@ -546,6 +546,12 @@ class Menu(metaclass=_MenuMeta):
 
         return payload.emoji in self.buttons
 
+    async def reset_button(self, payload):
+        try:
+            await self.message.remove_reaction(payload.emoji, payload.member)
+        except discord.errors.Forbidden:
+            pass
+
     async def _internal_loop(self):
         try:
             self.__timed_out = False
@@ -555,7 +561,7 @@ class Menu(metaclass=_MenuMeta):
             while self._running:
                 tasks = [
                     asyncio.ensure_future(self.bot.wait_for('raw_reaction_add', check=self.reaction_check)),
-                    asyncio.ensure_future(self.bot.wait_for('raw_reaction_remove', check=self.reaction_check))
+                    # asyncio.ensure_future(self.bot.wait_for('raw_reaction_remove', check=self.reaction_check))
                 ]
                 done, pending = await asyncio.wait(tasks, timeout=self.timeout, return_when=asyncio.FIRST_COMPLETED)
                 for task in pending:
@@ -578,6 +584,8 @@ class Menu(metaclass=_MenuMeta):
 
                 # For the future sake of myself and to save myself the hours in the future
                 # consider this my warning.
+
+                loop.create_task(self.reset_button(payload))
 
         except asyncio.TimeoutError:
             self.__timed_out = True
@@ -992,10 +1000,10 @@ class MenuPages(Menu):
         # The call here is safe because it's guarded by skip_if
         await self.show_page(self._source.get_max_pages() - 1)
 
-    @button('\N{BLACK SQUARE FOR STOP}\ufe0f', position=Last(2))
-    async def stop_pages(self, payload):
-        """stops the pagination session."""
-        self.stop()
+    # @button('\N{BLACK SQUARE FOR STOP}\ufe0f', position=Last(2))
+    # async def stop_pages(self, payload):
+    #     """stops the pagination session."""
+    #     self.stop()
 
 class ListPageSource(PageSource):
     """A data source for a sequence of items.
